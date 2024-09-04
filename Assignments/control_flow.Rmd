@@ -1,0 +1,62 @@
+---
+title: "Control-Flow Constructs"
+author: "Introduction to R"
+output:
+  html_document:
+    theme: spacelab
+---
+
+## Question 1
+
+Write an `if-else` construct that prints the statement "a < A" if `"a" < "A"` is `TRUE` and "a >= A" otherwise.
+```{r}
+# FILL ME IN
+if ("a"<"A")
+{
+  print("a < A")
+}else
+{
+  print("a >= A")
+}
+
+```
+
+## Question 2
+
+Repeat Q1, but using the `ifelse()` function.
+```{r}
+# FILL ME IN
+ifelse("a"<"A","a < A","a >= A")
+```
+
+## Question 3
+
+Write an `if` construct that, if there are matching elements of `u` and `v` (i.e., if `u[i] = v[i]` for any index i), prints the number of matching elements, and otherwise prints the string "There are no matching elements."
+```{r}
+# FILL ME IN
+u <- 1:50
+v <- c(99,105,35,23,77,91,6,57,41)
+equal <- table(match(u,v))
+if (length(equal>0)){
+  print(length(equal))
+}else{
+  print("There are no matching elements")
+}
+
+```
+
+## Question 4
+
+Confirm the short-circuiting behavior of an `if-else` construct by (a) setting the variable `t` to the value 4, and (b) writing an `if-else` construct that first checks if `t` is greater than or equal to 4 and if so prints "t >= 4", then checks to see if `t` is greater than zero and if so prints "t > 0", and otherwise prints "t <= 0".
+```{r}
+# FILL ME IN
+t<-4
+if(t>=4){
+  print("t >= 4")
+}else if (t > 0){
+  print("t > 0")
+}else {
+  print("t <= 0")
+}
+```
+

@@ -1,0 +1,113 @@
+---
+title: "Handy Vector Functions"
+author: "Introduction to R"
+output:
+  html_document:
+    theme: spacelab
+---
+
+Here we define some vectors:
+```{r}
+set.seed(1201)
+u <- sample(100,100,replace=TRUE)
+v <- sample(100,100,replace=TRUE)
+l <- list("x"=sample(1:10,5),"y"=sample(11:20,5))
+df <- data.frame("x"=sample(1:10,5),"y"=sample(11:20,5))
+x <- c(1,2,3,4)
+y <- c(-2,2,-3,3)
+z <- c(-5,1,2,-4,3,4,-3,6)
+```
+
+## Question 1
+
+Display the list `l` as a numerical vector, with names associated with each element.
+```{r}
+# FILL ME IN
+unlist(l)
+```
+
+## Question 2
+
+Display the list `l` as a numerical vector, while stripping away the names seen in Q1.
+```{r}
+# FILL ME IN
+vect<-as.vector(unlist(l))
+vect
+```
+
+## Question 3
+
+Repeat Q2, but display the vector in *descending* order.
+```{r}
+# FILL ME IN
+sort(vect,decreasing=TRUE)
+
+
+```
+
+## Question 4
+
+Here are the contents of the data frame `df`:
+```{r}
+df
+```
+Reorder the rows so that the entries of the `x` column are in numerical order and the association between the i<sup>th</sup> entry of `x` and the i<sup>th</sup> entry of `y` is not lost. Display the result.
+```{r}
+# FILL ME IN
+a<-df[["x"]]
+b<-df[["y"]]
+o<-order(a)
+a[o]
+b[o]
+
+```
+
+## Question 5
+
+Display the proportion of the total number of unique values in `u` to the number of values in `u`.
+```{r}
+# FILL ME IN
+length(unique(u))/length(u)
+```
+
+## Question 6
+
+Display a table that shows how often each value of `v` appears.
+```{r}
+# FILL ME IN
+table(v)
+```
+
+## Question 7
+
+How many unique values do `u` and `v` have in common?
+```{r}
+# FILL ME IN
+length(intersect(u,v))
+```
+
+## Question 8
+
+Write down an expression that returns `TRUE` if the union of `u` and `v` has 100 elements and `FALSE` otherwise.
+```{r}
+# FILL ME IN
+length(union(u,v)) == 100
+```
+
+## Question 9
+
+Display the (sorted!) values of `u` that do not appear in `v`.
+```{r}
+# FILL ME IN
+setdiff(sort(u),v)
+```
+
+## Question 10
+
+Display a table showing how many values that are in `v` but not in `u` fall into the bins [1,50] and [51,100].
+```{r}
+# FILL ME IN
+s<-setdiff(v,u)
+table(findInterval(s,c(51)))
+
+```

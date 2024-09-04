@@ -1,0 +1,83 @@
+---
+title: "Loops"
+author: "Introduction to R"
+output:
+  html_document:
+    theme: spacelab
+---
+
+## Question 1
+
+Write a `for()` loop to add, elementwise, the vectors `x` and `y` defined below. Place each sum into the vector `x.plus.y` (which you can initialize using, e.g., `x.plus.y <- rep(NA,4)`, where `NA` means "not available" or missing), then after the `for()` loop, display `x.plus.y`.
+```{r}
+x <- c(1,2,3,4)
+y <- c(-2,2,-3,3)
+# FILL ME IN
+x.plus.y <- rep(NA,4)
+for(ii in seq_along(x.plus.y)){
+  x.plus.y[ii] <- x[ii]+y[ii]
+}
+x.plus.y
+```
+
+## Question 2
+
+Write a `for()` loop to sum the natural logarithms of all elements of the vector `z`, defined below, that are positive. (Use `if` to check for positivity.) Display the result. Show that you can perform the same task without a `for()` loop, by utilizing logical-based vector subsetting and one call to `sum()`.
+```{r}
+z <- c(-5,1,2,-4,3,4,-3,6)
+sum.z.positive <- 0
+# FILL ME IN
+for (ii in 1:length(z)){
+  if (z[ii] >0) {
+    sum.z.positive <- sum.z.positive + log(z[ii])
+  }
+}
+sum.z.positive
+sum(log(z[z>0]))
+```
+
+## Question 3
+
+Write a `while()` loop that computes the sum of the first 100 positive integers. (Set the variable `s` equal to zero, then increment its value with each loop.) Then display the result. (It should be 5050.)
+```{r}
+# FILL ME IN
+condition <-TRUE
+sumofhundred <- 0
+num <- 1
+while(condition){
+  if (num <=100){
+    sumofhundred = sumofhundred + num
+  }else {
+    condition <- FALSE
+  }
+  num <- num+1
+}
+sumofhundred
+```
+
+## Question 4
+
+Repeat Q3, but use a `for()` loop instead.
+```{r}
+# FILL ME IN
+sumofhundred <- 0
+for (num in 1:100){
+  sumofhundred = sumofhundred + num
+}
+sumofhundred
+```
+
+## Question 5
+
+Write a `while()` loop that samples one value from a standard normal, then breaks when the value is greater than 4. (The code would be `if ( rnorm(1) > 4 ) break`.) Also include an incrementing variable that increments by one with each loop, and display its value when the loop is broken. (In other words: display how many loops occurred before a sampled value of > 4 was observed.)
+```{r}
+# FILL ME IN
+count <- 1
+while(count){
+  if (rnorm(1) > 4) break
+  count <- count +1
+}
+count
+  
+```
+

@@ -1,0 +1,115 @@
+---
+title: "All About Vectors"
+author: "Introduction to R"
+output:
+  html_document:
+    theme: spacelab
+---
+
+# Preliminaries
+
+After each question, you will see the following:
+```{r}
+# FILL ME IN
+```
+This, in `R Markdown` parlance, is a "code chunk." To answer the question, replace this line with your answer. Note that anything following a "#" symbol is a comment (or is code that is "commented out"). Also note that you do not need to remove the question or make other edits. Just fill in the code chunks.
+
+To run the chunk to see if it works, simply put your cursor *inside* the chunk and, e.g., select "Run Current Chunk" from the "Run" pulldown tab. Alternately, you can click on the green arrow at the upper right-most part of the chunk, or use "\<cntl\>-\<return\>" as a keyboard shortcut.
+
+Here is an example (that only makes sense if you are looking at the `.Rmd` file):
+
+## Question 0
+
+Print "Hello, world."
+```{r}
+print("Hello, world.")
+```
+
+When you have finished answering the questions, you can click on the "Knit" button to see a "compiled" version of your answers. Note that `R Markdown` may prompt you to install packages to get the knitting to work; do install these.
+
+---
+
+## Question 1
+
+Initialize a vector $y$ with one logical value, one numeric value, and one character value, and determine the type of $y$.
+
+```{r}
+# FILL ME IN
+y<- c(TRUE, 8, 'A')
+typeof(y)
+```
+
+## Question 2
+
+Sort the vector $y$ into ascending order. Note how the data are ordered.
+```{r}
+# FILL ME IN
+sort(y)
+```
+
+## Question 3
+
+Initialize a vector $y$ of integers, with first value 4 and last value -4, stepping down by 1. Do this *two* different ways. After each initialization, print the vector.
+```{r}
+# FILL ME IN
+y<- seq(4, -4, by=-1)
+y
+y<-4:-4
+y
+
+```
+
+## Question 4
+
+What variable type is 1?
+Divide 1 by 2. Note to yourself whether you get zero or 0.5.
+```{r}
+# FILL ME IN
+x<-1
+typeof(x)
+d<- (1/2)
+d
+```
+
+## Question 5
+
+Take the vector $x$ defined below and display the elements that are less than $-1$ or greater than $1$. Do this using the logical or symbol, and again via the use of the `abs()` function (for absolute value).
+```{r}
+set.seed(199)
+x <- rnorm(20)
+x[x< -1 | x>1]
+x[abs(x)>1]
+
+# FILL ME IN
+```
+
+## Question 6
+
+What proportion of values in the vector $x$ are less than 0.5? Use `sum()` and `length()` in your answer.
+```{r}
+# FILL ME IN
+sum(x<0.5)/length(x)
+```
+
+## Question 7
+
+Sort all the values of $x$ in *decreasing* order. Do this two different ways.
+To see the help page for `sort()` (which might help you), type `?sort` at
+the Console prompt.
+```{r}
+# FILL ME IN
+sort(x, decreasing = TRUE)
+rev(sort(x))
+```
+
+## Question 8
+
+Replace all positive values in the vector $x$ with zero, using `which()`.
+```{r}
+# FILL ME IN
+x
+w<-which(x>0)
+x[w]<-0
+x
+```
+
