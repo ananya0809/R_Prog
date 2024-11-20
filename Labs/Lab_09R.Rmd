@@ -1,0 +1,182 @@
+---
+title: "Lab: Random Forest and Boosting"
+author: "36-600"
+output: 
+  html_document:
+    toc: no
+    toc_float: no
+    theme: spacelab
+---
+
+# Regression
+
+We import the heart-disease dataset and log-transform the response variable, `Cost`:
+```{r}
+df      <- read.csv("http://www.stat.cmu.edu/~pfreeman/heart_disease.csv",stringsAsFactors=TRUE)
+df      <- df[,-10]
+w       <- which(df$Cost > 0)
+df      <- df[w,]
+df$Cost <- log(df$Cost)
+```
+
+## Question 1
+
+Split these data into training and test sets, reusing the random-number-generator seed you used in previous labs when analyzing these data.
+```{r}
+# REPLACE ME WITH CODE
+set.seed(101)  # Using original seed here
+n <- nrow(df)   # Number of rows in the dataset
+
+# Split ratio
+train_ratio <- 0.7  # For a 70-30 split between training and test
+
+# Create a random sample of indices for the training set
+train_indices <- sample(1:n, size = round(train_ratio * n))
+
+# Subset the data into training and test sets
+train_set <- df[train_indices, ]
+test_set <- df[-train_indices, ]
+
+# Check the dimensions to confirm the split
+dim(train_set)
+dim(test_set)
+
+```
+
+## Question 2
+
+Learn a random forest model given the training data, and compute the MSE. Remember to set `importance=TRUE`. **Note: for reproducible results, set the seed before running random forest!** Assuming you split the data in the same manner as you did before, feel free to look back at your other labs and see if the MSE is smaller here. (For me and my split? It is...about 10% smaller than for a regression tree.)
+```{r}
+# REPLACE ME WITH CODE
+# Load the required package
+suppressMessages(library(randomForest))
+
+# Set the random seed for reproducibility
+set.seed(101)  # original seed 
+
+# Train a random forest model on the training set
+rf_model <- randomForest(Cost ~ ., data = train_set, importance = TRUE)
+
+# Predict on the test set
+predictions <- predict(rf_model, test_set)
+
+# Calculate the Mean Squared Error (MSE)
+model_summ <-summary(rf_model)
+
+mse <- mean((train_set$Cost - predictions)^2)
+model_summ
+mse
+
+```
+
+## Question 3
+
+Create the variable importance plot. Remember to pass `type=1` as an argument to this plot. Mentally note the important variables. These should be consistent with those variables that appeared in your regression tree in the tree lab.
+```{r fig.align='center',fig.height=4,fig.width=4}
+# REPLACE ME WITH CODE
+varImpPlot(rf_model, type = 1, main = "Variable Importance Plot")
+```
+
+## Question 4
+
+Show the diagnostic plot of predicted test-set response values vs. observed test-set response values. As usual, make sure the limits are the same along both axes and plot a diagonal line with slope 1.
+```{r fig.align='center',fig.height=4,fig.width=4}
+# REPLACE ME WITH CODE
+# Predict on the test set
+test_predictions <- predict(rf_model, test_set)
+
+# Set up plot limits to match both axes
+plot_limits <- range(c(test_set$Cost, test_predictions))
+
+# Create the plot
+plot(test_set$Cost, test_predictions, 
+     xlim = plot_limits, ylim = plot_limits,
+     xlab = "Observed Cost (Test Set)", 
+     ylab = "Predicted Cost (Test Set)",
+     main = "Diagnostic Plot: Observed vs. Predicted",
+     pch = 19, col = "yellow")
+
+# Add a diagonal line with slope 1
+abline(a = 0, b = 1, col = "red", lwd = 2)
+
+```
+
+## Question 5
+
+Now learn an extreme gradient boosting model, and show the test-set MSE. Note that in order to do this, we have to remove the variables `Gender`, `Drugs`, and `Complications`, which are factor or factor-like variables, and for ease of code implementation, we will break up `df.train` and `df.test` into predictor and response variables:
+```{r}
+suppressMessages(library(tidyverse))
+df.train %>% dplyr::select(.,-Gender,-Drugs,-Complications) -> df.train
+df.test  %>% dplyr::select(.,-Gender,-Drugs,-Complications) -> df.test
+resp.train <- df.train[,1]
+resp.test  <- df.test[,1]
+pred.train <- df.train[,-1]
+pred.test  <- df.test[,-1]
+```
+Note that by doing this, the MSE that we get might not be as good as for random forest. But we'll see!
+```{r}
+# REPLACE ME WITH CODE
+```
+
+## Question 6
+
+Create a variable importance plot for the extreme gradient boosting model. Make a mental note about whether the variables identified as important here are also the more important ones identified by random forest.
+```{r fig.align='center',fig.height=4,fig.width=4}
+# REPLACE ME WITH CODE
+```
+
+---
+
+# Classification
+
+We will now load in the data on political movements that you looked at in previous labs:
+```{r}
+load(url("http://www.stat.cmu.edu/~pfreeman/movement.Rdata"))
+f <- function(variable,level0="NO",level1="YES") {
+  n               <- length(variable)
+  new.variable    <- rep(level0,n)
+  w               <- which(variable==1)
+  new.variable[w] <- level1
+  return(factor(new.variable))
+}
+predictors$nonviol      <- f(predictors$nonviol)
+predictors$sanctions    <- f(predictors$sanctions)
+predictors$aid          <- f(predictors$aid)
+predictors$support      <- f(predictors$support)
+predictors$viol.repress <- f(predictors$viol.repress)
+predictors$defect       <- f(predictors$defect)
+levels(response)        <- c("FAILURE","SUCCESS")
+df           <- cbind(predictors,response)
+names(df)[9] <- "label"
+rm(id.half,id,predictors.half,predictors,response)
+```
+
+Note that given the number of factor variables in this dataset, we'll forego learning a boosting model below.
+
+## Question 7
+
+Split the data! Recreate what you did for previous labs, including the random-number-generator seed.
+```{r}
+# REPLACE ME WITH CODE
+```
+
+## Question 8
+
+Learn a random forest model. Output probabilities for Class 1 (see the notes!) but do not output a confusion matrix or output a misclassification rate. It will become clear why we will hold off on computing this quantities for now... However, having said all this, do go ahead and plot the variable importance plot here.
+```{r fig.align='center',fig.height=4,fig.width=4}
+# REPLACE ME WITH CODE
+```
+
+## Question 9
+
+Plot a ROC curve for random forest, and output the AUC value.
+```{r fig.align='center',fig.height=4,fig.width=4}
+# REPLACE ME WITH CODE
+```
+
+## Question 10
+
+Use Youden's $J$ statistic to determine the optimal class-separation threshold. Output that number. Then, using that threshold, transform the test-set Class 1 probabilities to class predictions, and output the confusion matrix and the misclassification rate. (Note: you can reuse code from previous labs.)
+```{r}
+# REPLACE ME WITH CODE
+```

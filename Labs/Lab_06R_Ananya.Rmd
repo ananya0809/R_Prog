@@ -1,0 +1,228 @@
+---
+title: "Lab: Principal Components Analysis"
+author: "36-600"
+output:
+  html_document:
+    theme: spacelab
+    toc: no
+    toc_float: no
+  pdf_document:
+    toc: no
+---
+
+To answer the questions below, it will help you to refer to Sections 10.2 and 10.4 of ISLR; it might also help you to refer to your previous lab work (and, as always, to Google). 
+
+## Data
+
+We'll begin by importing a dataset related to breast cancer:
+```{r}
+df       <- read.csv("http://www.stat.cmu.edu/~pfreeman/breastcancer.csv",stringsAsFactors=TRUE)
+response <- df[,1]  # B for benign, M for malignant
+df       <- df[,-1]
+```
+These data reside on [Kaggle](https://www.kaggle.com/mciml/breast-cancer-wisconsin-data). They provide information on breast cancer tumors (read: features extracted from images of cells!) for 569 people in which malignancy was suspected. The data are marked by *extreme* multicollinearity and redundancy; for instance, there are the columns `Mean.Radius`, `Mean.Perimeter`, and `Mean.Area`, which almost give the exact same statistical information. Also, the first ten columns are paired with the last ten columns: `Mean.Radius` with `Worst.Radius`, etc. If, for instance, 100 tumor cells are examined for a given person, the `Mean.Radius` will be the average tumor radius for all 100 data, and the `Worst.Radius` will be the average tumor radius for the three largest tumors. So, obviously, the `Mean`/`Worst` variable pairs are going to be correlated variable pairs.
+
+In short, this is a dataset put together by someone with no experience in experimental design.
+
+But also, in short, this is a dataset where the data would appear to reside in a subspace that is going to be smaller than 20 dimensions. What can PCA tell us in this regard?
+
+## Question 1
+
+Construct a `corrplot` for `df`. Do the data appear to be correlated? (Just answer that question to yourself, no need to write anything down.) Note that adding the variable names leads to a "squashed" correlation plot. Since here you are simply visually assessing whether the data are correlated, without having to identify individual variables, I would suggest adding the argument `tl.pos="n"` to the `corrplot()` call. (Note: how did I figure out how to do this? I looked in the documentation, didn't immediately see how to remove variable names, and Googled. StackOverflow had the answer. Never stop Googling!)
+```{r}
+# FILL ME IN WITH CODE
+library(corrplot)
+corrplot(cor(df), tl.pos = "n")
+
+```
+
+## Question 2
+
+Perform PCA on these data. (Be sure to look at the documentation, as there is one particular argument to `prcomp()` that you'll want to set!) Construct a plot showing the proportion of variance explained. (See page 403 of ISLR 1st edition to see an example of a plot constructed using the `cumsum()` function...emulate that one, but use `ggplot()` instead of base-`R` plotting functions.) How many PCs would you retain, if you were to make a choice?
+```{r}
+# FILL ME IN WITH CODE
+library(ggplot2)
+
+# scale needs to be set to true since the variables represent different measurements, and all the variables need to be treated equally
+pca_result <- prcomp(df, scale. = TRUE)
+
+# todo: confirm page 403 ?
+variance_explained <- pca_result$sdev^2 / sum(pca_result$sdev^2)
+cumulative_variance <- cumsum(variance_explained)
+
+pca_df <- data.frame(
+  PC = 1:length(variance_explained),
+  VarianceExplained = variance_explained,
+  CumulativeVariance = cumulative_variance
+)
+
+print(pca_df)
+
+ggplot(pca_df, aes(x = PC, y = CumulativeVariance)) +
+  geom_point() +
+  geom_line() +
+  xlab("Principal Component") +
+  ylab("Cumulative Proportion of Variance Explained") +
+  ggtitle("Cumulative Variance Explained by Principal Components") +
+  theme_minimal()
+
+```
+```
+FILL ME IN WITH TEXT
+The decision on how many PCs to retain is subjective. Typically we want to retain enough components to explain around 85%-95% of the variance.
+
+The graph starts to plateau after the value 5, which indicates diminishing returns post that amount.
+```
+
+## Question 3
+
+Show the first column of the `rotation` matrix output by `prcomp()`. (Recall that you can access the first column of a matrix or data frame by appending `[,1]` to the name of the matrix or data frame.) This shows the relative weighting of the contribution of each original variable to the first PC. (Don't worry about any minus signs.) Make a mental note: do many/most of the variables contribute to PC1, or just a couple/few? As far as interpretation: recall that if you square every number you observe and add them all together, you get 1. For those of you comfortable with linear algebra, what you are observing is a unit-length vector defined in the data's native space.
+```{r}
+# FILL ME IN WITH CODE
+print(pca_result$rotation[, 1])
+```
+
+## Question 4
+
+Repeat what you did in Question 3 for PCs 2-6. (You could do this compactly by referring to `rotation[,2:6]`.) Do particular variables map to these? (Again, just make mental notes. Call one of us over if you need help with interpretation.)
+```{r}
+# FILL ME IN WITH CODE
+print(pca_result$rotation[, 2:6])
+```
+
+## Question 5
+
+Visualize via scatter plot the coordinates of the data along the first and second PC axes. This information is kept in the first and second columns of the `x` matrix output by `prcomp()`, accessible as `x[,1:2]`. For fun, color the data using values of the `response` variable that we set aside above when we input the data. You can do this most simply by adding `color=response` as an argument in the call to `aes()`. `ggplot2` will figure out how to use the levels of the variable to determine colors (as if by magic). Does it look like benign and malignant tumors separate well in PC space?
+```{r}
+# FILL ME IN WITH CODE
+pca_df <- data.frame(
+  PC1 = pca_result$x[, 1],
+  PC2 = pca_result$x[, 2],
+  Response = response  # 'B' for benign, 'M' for malignant
+)
+
+# Create the scatter plot using ggplot2
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Response)) +
+  geom_point(alpha = 0.7) +  # Use semi-transparent points to avoid overlap
+  xlab("Principal Component 1") +
+  ylab("Principal Component 2") +
+  ggtitle("PC1 vs PC2: Tumor Classification") +
+  theme_minimal()
+```
+
+## Question 6
+
+Repeat Question 5, but for PC2 and PC3. Does it appear (visually) that PC3 contains information useful for classifying the two `response` classes? How about PC3 and PC4? Again, make mental notes and call us over as necessary.
+```{r}
+# FILL ME IN WITH CODE
+pca_df_2_3 <- data.frame(
+  PC2 = pca_result$x[, 2],
+  PC3 = pca_result$x[, 3],
+  Response = response  # 'B' for benign, 'M' for malignant
+)
+
+# Scatter plot for PC2 vs PC3
+ggplot(pca_df_2_3, aes(x = PC2, y = PC3, color = Response)) +
+  geom_point(alpha = 0.7) +  # Use semi-transparent points
+  xlab("Principal Component 2") +
+  ylab("Principal Component 3") +
+  ggtitle("PC2 vs PC3: Tumor Classification") +
+  theme_minimal()
+
+
+# Create a data frame for PC3 and PC4
+pca_df_3_4 <- data.frame(
+  PC3 = pca_result$x[, 3],
+  PC4 = pca_result$x[, 4],
+  Response = response  # 'B' for benign, 'M' for malignant
+)
+
+# Scatter plot for PC3 vs PC4
+ggplot(pca_df_3_4, aes(x = PC3, y = PC4, color = Response)) +
+  geom_point(alpha = 0.7) +  # Use semi-transparent points
+  xlab("Principal Component 3") +
+  ylab("Principal Component 4") +
+  ggtitle("PC3 vs PC4: Tumor Classification") +
+  theme_minimal()
+```
+
+## Question 7
+
+You know, given the results in Question 5...let's simply visualize the data of PC1 using side-by-side box plots, based on the values of `response`. This is a good thing to review. You should see that the boxes are widely separated, implying that any classification algorithm should do a good job predicting tumor type.
+```{r}
+# FILL ME IN WITH CODE
+pca_df_1 <- data.frame(
+  PC1 = pca_result$x[, 1],
+  Response = response  # 'B' for benign, 'M' for malignant
+)
+
+# Create side-by-side box plots for PC1 based on the response
+ggplot(pca_df_1, aes(x = Response, y = PC1, fill = Response)) +
+  geom_boxplot() +
+  xlab("Tumor Type (B = Benign, M = Malignant)") +
+  ylab("Principal Component 1") +
+  ggtitle("PC1 Values by Tumor Type (Benign vs. Malignant)") +
+  theme_minimal()
+```
+
+## Question 8
+
+We are going to cheat here: we are going to do a logistic regression on the PCs before talking about logistic regression in class. The good news is, that means I give you the code. To generate a misclassification rate given $n$ PCs, you can run the following:
+```
+n        <- 4                                              # don't read anything into this specific number
+df       <- data.frame(pca.out$x[,1:n])
+glm.out  <- suppressWarnings(glm(response~.,data=df,family=binomial))  # I'm not splitting data here
+glm.prob <- predict(glm.out,type="response")
+glm.pred <- ifelse(glm.prob>0.5,"M","B")
+(t       <- table(glm.pred,response))
+cat("The misclassification rate is ",round((t[1,2]+t[2,1])/sum(t),3),"\n")
+```
+What is the misclassification rate for 1 PC? What about for your chosen number of PCs from above? (Copy the code twice, and the output will provide the answers. Just make a mental note: do the extra PCs "help" or do they barely nudge the rate down at all? The plots you made above may give you an initial intuition about the answer...that intuition might be right, but it also might be wrong.) What you will see is that PC logistic regression works well...but again, if your goal is prediction, you don't need to worry about multicollinearity and thus you need not compute PCs to do classification, and if your goal is inference, you'll still need to explain to your readers what the individual PCs represent (in terms of the original variables).
+```{r}
+# FILL ME IN WITH CODE
+
+# Number of principal components to use
+n <- 1
+
+# Create a data frame with the first 'n' PCs
+df_pcs <- data.frame(pca_result$x[, 1:n])
+
+# Perform logistic regression
+glm_out <- suppressWarnings(glm(response ~ ., data = df_pcs, family = binomial))
+
+# Predict probabilities
+glm_prob <- predict(glm_out, type = "response")
+
+# Classify based on 0.5 threshold
+glm_pred <- ifelse(glm_prob > 0.5, "M", "B")
+
+# Create confusion matrix
+t <- table(glm_pred, response)
+
+# Calculate and print misclassification rate
+misclass_rate_1PC <- round((t[1, 2] + t[2, 1]) / sum(t), 3)
+cat("The misclassification rate for 1 PC is", misclass_rate_1PC, "\n")
+#########################################################################
+# Number of principal components to use
+n <- 5
+
+# Create a data frame with the first 'n' PCs
+df_pcs <- data.frame(pca_result$x[, 1:n])
+
+# Perform logistic regression
+glm_out <- suppressWarnings(glm(response ~ ., data = df_pcs, family = binomial))
+
+# Predict probabilities
+glm_prob <- predict(glm_out, type = "response")
+
+# Classify based on 0.5 threshold
+glm_pred <- ifelse(glm_prob > 0.5, "M", "B")
+
+# Create confusion matrix
+t <- table(glm_pred, response)
+
+# Calculate and print misclassification rate
+misclass_rate_5PC <- round((t[1, 2] + t[2, 1]) / sum(t), 3)
+cat("The misclassification rate for 5 PCs is", misclass_rate_5PC, "\n")
+
+```

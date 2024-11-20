@@ -1,0 +1,200 @@
+---
+title: "Lab: Numerical Optimization"
+author: "36-600"
+output: 
+  html_document:
+    toc: no
+    toc_float: no
+    theme: spacelab
+---
+
+## Data
+
+Let's generate the same data that we used to illustrate nonlinear regression:
+```{r}
+set.seed(555)
+x <- -5:5
+y <- 0.1*x^3 - 0.5*x + 2.1 + rnorm(length(x),mean=0,sd=0.5*(1+abs(x)))
+e <- 0.5*(1+abs(x))
+
+df <- data.frame("x"=x,"y"=y,"e"=e)
+
+suppressMessages(library(tidyverse))
+ggplot(data=df,mapping=aes(x=x,y=y)) +
+  geom_errorbar(aes(ymin=y-e, ymax=y+e), width=.1,color="blue") +
+  geom_point(color="firebrick")
+```
+
+# Questions
+
+## Question 1
+
+Assume that you know that a cubic polynomial is the correct function to use here, but you do not know what the true parameters are. (That means you should include the $x^2$ term in your curve-fitting analysis! Yes...you could just do polynomial regression here, like you did in the last lab, but we'll go ahead and try out numerical optimization.) Code an optimizer that will allow you to estimate the four coefficient terms of a cubic polynomial. Try not to let the true cubic polynomial coefficients above influence your initial guesses. Show the coefficients and plot your result. Make sure your plot looks good before you move on to Question 2: with four terms, it can be relatively easy to find a locally optimal result that is not the globally optimal result, i.e., it can be relatively easy to find a local minimum in $\chi^2$ that is not the global minimum. It's pretty easy to identify when this is the case when you plot functions...so always plot them! 
+```{r}
+# REPLACE ME WITH CODE
+# Load necessary library
+suppressMessages(library(tidyverse))
+
+# Define the cost function for optimization
+cost_function <- function(params, x, y, e) {
+  a <- params[1]
+  b <- params[2]
+  c <- params[3]
+  d <- params[4]
+  y_pred <- a + b * x + c * x^2 + d * x^3
+  sum(((y - y_pred) / e)^2) # Chi-squared
+}
+
+# Initial guesses for the parameters
+initial_guesses <- c(a = 1, b = 1, c = 1, d = 1)
+
+# Perform optimization
+fit <- optim(
+  par = initial_guesses,
+  fn = cost_function,
+  x = df$x,
+  y = df$y,
+  e = df$e
+)
+
+# Extract optimized parameters
+optimized_params <- fit$par
+cat("Optimized Parameters:\n")
+print(optimized_params)
+
+# Define the fitted curve
+fitted_curve <- function(x) {
+  a <- optimized_params[1]
+  b <- optimized_params[2]
+  c <- optimized_params[3]
+  d <- optimized_params[4]
+  a + b * x + c * x^2 + d * x^3
+}
+
+# Generate fitted values
+df$fitted_y <- fitted_curve(df$x)
+
+# Plot the data and the fitted curve
+ggplot(data = df, aes(x = x, y = y)) +
+  geom_errorbar(aes(ymin = y - e, ymax = y + e), width = 0.1, color = "blue") +
+  geom_point(color = "firebrick") +
+  geom_line(aes(y = fitted_y), color = "darkgreen", size = 1) +
+  labs(title = "Cubic Polynomial Fit", x = "x", y = "y") +
+  theme_minimal()
+
+```
+
+## Question 2
+
+Take the minimum $\chi^2$ value that you found in Question 1 (it's in the output from `optim()`, even if you didn't explicitly display it) and perform a $\chi^2$ goodness of fit test. Recall that the null hypothesis is that the model is an acceptable one, i.e., that it plausibly replicates the data-generating process. Do you reject the null, or fail to reject the null? (Also recall that the number of degrees of freedom is $n-p$, where $n$ is the length of $x$ and $p$ is the number of coefficients in the cubic polynomial.)
+```{r}
+# REPLACE ME WITH CODE
+# Number of data points
+n <- length(df$x)
+
+# Number of parameters in the model
+p <- 4
+
+# Degrees of freedom
+df_chi <- n - p
+
+# Minimum chi-squared value from the optimization
+chi_squared_min <- fit$value
+
+# Compute the p-value
+p_value <- pchisq(chi_squared_min, df = df_chi, lower.tail = FALSE)
+
+cat("Chi-squared Statistic:", chi_squared_min, "\n")
+cat("Degrees of Freedom:", df_chi, "\n")
+cat("p-value:", p_value, "\n")
+
+# Decision
+if (p_value < 0.05) {
+  cat("Reject the null hypothesis: The model is NOT an acceptable fit.\n")
+} else {
+  cat("Fail to reject the null hypothesis: The model is an acceptable fit.\n")
+}
+
+```
+```
+The p value is smaller than 0.05, which indicates that we accept the null hypothesis, that is the model is an acceptable fit
+```
+
+## Data Part II
+
+Now let's say we have a dataset that looks like this:
+```{r}
+df <- read.csv("https://www.stat.cmu.edu/~pfreeman/optim_data.csv")
+
+suppressMessages(library(tidyverse))
+ggplot(data=df,mapping=aes(x=x,y=y)) +
+  geom_errorbar(aes(ymin=y-e, ymax=y+e), width=.1,color="blue") +
+  geom_point(color="firebrick")
+```
+
+## Question 3
+
+This will be a bit more free-form. Determine a model that might generate the observed data, optimize its parameters, and plot the result. Not sure where to start? Well, that's a common feeling in real-life analyses situations...
+```{r}
+# REPLACE ME WITH CODE
+# Load the dataset from the URL you provided earlier
+df <- read.csv("https://www.stat.cmu.edu/~pfreeman/optim_data.csv")
+
+# Plot the data for visualization
+ggplot(data = df, aes(x = x, y = y)) +
+  geom_errorbar(aes(ymin = y - e, ymax = y + e), width = 0.1, color = "blue") +
+  geom_point(color = "firebrick") +
+  labs(title = "Observed Data", x = "x", y = "y") +
+  theme_minimal()
+
+# Define the cost function for the sinusoidal + linear model
+cost_function <- function(params, x, y, e) {
+  a <- params[1]
+  b <- params[2]
+  c <- params[3]
+  d <- params[4]
+  f <- params[5]
+  y_pred <- a + b * x + c * sin(d * x + f)
+  sum(((y - y_pred) / e)^2) # Chi-squared
+}
+
+# Initial guesses for the parameters
+initial_guesses <- c(a = 1, b = 0.1, c = 1, d = 0.1, f = 0)
+
+# Perform optimization to find the best parameters
+fit <- optim(
+  par = initial_guesses,
+  fn = cost_function,
+  x = df$x,
+  y = df$y,
+  e = df$e
+)
+
+# Extract optimized parameters
+optimized_params <- fit$par
+cat("Optimized Parameters:\n")
+print(optimized_params)
+
+# Define the fitted curve
+fitted_curve <- function(x) {
+  a <- optimized_params[1]
+  b <- optimized_params[2]
+  c <- optimized_params[3]
+  d <- optimized_params[4]
+  f <- optimized_params[5]
+  a + b * x + c * sin(d * x + f)
+}
+
+# Generate fitted values
+df$fitted_y <- fitted_curve(df$x)
+
+# Plot the data and the fitted curve
+ggplot(data = df, aes(x = x, y = y)) +
+  geom_errorbar(aes(ymin = y - e, ymax = y + e), width = 0.1, color = "blue") +
+  geom_point(color = "firebrick") +
+  geom_line(aes(y = fitted_y), color = "darkgreen", size = 1) +
+  labs(title = "Fitted Sinusoidal + Linear Model", x = "x", y = "y") +
+  theme_minimal()
+
+```
+

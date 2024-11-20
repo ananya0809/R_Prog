@@ -1,0 +1,178 @@
+---
+title: "Lab: Nonlinear Regression"
+author: "36-600"
+output: 
+  html_document:
+    toc: no
+    toc_float: no
+    theme: spacelab
+---
+
+```{r}
+suppressMessages(library(tidyverse))
+```
+
+## Data
+
+We'll begin by simulating a dataset from a nonlinear curve:
+```{r}
+set.seed(555)
+x <- -5:5
+y <- 0.1*x^3 - 0.5*x + 2.1 + rnorm(length(x),mean=0,sd=0.5*(1+abs(x)))
+e <- 0.5*(1+abs(x))
+
+df <- data.frame("x"=x,"y"=y,"e"=e)
+
+suppressMessages(library(tidyverse))
+ggplot(data=df,mapping=aes(x=x,y=y)) +
+  geom_errorbar(aes(ymin=y-e, ymax=y+e), width=.1,color="blue") +
+  geom_point(color="firebrick")
+```
+
+# Questions
+
+## Question 1
+
+Implement a (weighted) global cubic polynomial regression model in a similar manner to that implemented in the notes; namely, that means learn the model, run predict to determine the regression line, plot the data with the regression line superimposed, show the coefficients, and compute the mean-squared error. Like we did(n't do) in the notes, do not split the data into training and test datasets.
+```{r echo=FALSE,fig.width=4,fig.height=4,fig.align="center"}
+# REPLACE ME WITH CODE
+# Fit a weighted cubic regression model
+model <- lm(y ~ poly(x, 3, raw = TRUE), data = df, weights = 1 / e^2)
+
+# Predict y values using the fitted model
+df$y_pred <- predict(model, newdata = df)
+
+# Plot the data, error bars, and regression line
+library(ggplot2)
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_errorbar(aes(ymin = y - e, ymax = y + e), width = 0.1, color = "blue") +
+  geom_point(color = "firebrick") +
+  geom_line(aes(y = y_pred), color = "darkgreen") +
+  labs(title = "Weighted Cubic Polynomial Regression", x = "x", y = "y")
+
+# Display model coefficients
+print("Model Coefficients:")
+print(coef(model))
+
+# Compute the mean-squared error
+mse <- mean((df$y - df$y_pred)^2)
+print(paste("Mean Squared Error (MSE):", mse))
+```
+
+## Question 2
+
+Repeat Q1, but utilizing a regression splines model. Assume four degrees of freedom.
+```{r echo=FALSE,fig.width=4,fig.height=4,fig.align="center"}
+# REPLACE ME WITH CODE
+# Load necessary library for splines
+library(splines)
+
+# Fit a spline regression model with 4 degrees of freedom
+spline_model <- lm(y ~ bs(x, df = 4), data = df, weights = 1 / e^2)
+
+# Predict y values using the fitted spline model
+df$y_pred_spline <- predict(spline_model, newdata = df)
+
+# Plot the data, error bars, and spline regression line
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_errorbar(aes(ymin = y - e, ymax = y + e), width = 0.1, color = "blue") +
+  geom_point(color = "firebrick") +
+  geom_line(aes(y = y_pred_spline), color = "purple") +
+  labs(title = "Weighted Regression Splines Model", x = "x", y = "y")
+
+# Display spline model coefficients
+print("Spline Model Coefficients:")
+print(coef(spline_model))
+
+# Compute the mean-squared error for the spline model
+mse_spline <- mean((df$y - df$y_pred_spline)^2)
+print(paste("Mean Squared Error (MSE) for Spline Model:", mse_spline))
+
+```
+
+## Question 3
+
+Repeat Q1, but with a smoothing spline model. Note that you may get a "surprising" result.
+```{r echo=FALSE,fig.width=4,fig.height=4,fig.align="center"}
+# REPLACE ME WITH CODE
+# Fit a smoothing spline model with weights
+spline_smooth <- smooth.spline(x = df$x, y = df$y, w = 1 / df$e^2, cv=TRUE)
+
+# Predict y values using the fitted smoothing spline model
+df$y_pred_smooth <- predict(spline_smooth, x = df$x)$y
+
+# Plot the data, error bars, and smoothing spline line
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_errorbar(aes(ymin = y - e, ymax = y + e), width = 0.1, color = "blue") +
+  geom_point(color = "firebrick") +
+  geom_line(aes(y = y_pred_smooth), color = "darkorange") +
+  labs(title = "Weighted Smoothing Spline Model", x = "x", y = "y")
+
+# Display the degrees of freedom used in the smoothing spline
+print(paste("Degrees of Freedom used in Smoothing Spline:", spline_smooth$df))
+
+# Compute the mean-squared error for the smoothing spline model
+mse_smooth <- mean((df$y - df$y_pred_smooth)^2)
+print(paste("Mean Squared Error (MSE) for Smoothing Spline Model:", mse_smooth))
+
+```
+
+## Question 4
+
+Repeat Q1, but with a local polynomial regression model. Assume a `span` of 0.6.
+```{r}
+# REPLACE ME WITH CODE
+
+# Fit a local polynomial regression model with a span of 0.6
+local_poly_model <- loess(y ~ x, data = df, weights = 1 / e^2, span = 0.6)
+
+# Predict y values using the fitted local polynomial model
+df$y_pred_local <- predict(local_poly_model, newdata = df)
+
+# Plot the data, error bars, and local polynomial regression line
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_errorbar(aes(ymin = y - e, ymax = y + e), width = 0.1, color = "blue") +
+  geom_point(color = "firebrick") +
+  geom_line(aes(y = y_pred_local), color = "darkgreen") +
+  labs(title = "Weighted Local Polynomial Regression (LOESS)", x = "x", y = "y")
+
+# Compute the mean-squared error for the local polynomial model
+mse_local <- mean((df$y - df$y_pred_local)^2)
+print(paste("Mean Squared Error (MSE) for Local Polynomial Regression:", mse_local))
+
+```
+
+## Question 5
+
+Redo the plot in Q4, but let's add a one-standard-error confidence band. You can do this by running the first line, then adding the last two lines onto your `ggplot()` call:
+```
+p <- predict(lpr.out,se=TRUE)
+
++ geom_line(mapping=aes(x=lpr.out$x,y=lpr.out$fitted+p$se),color="[your color]",linetype="dashed")
++ geom_line(mapping=aes(x=lpr.out$x,y=lpr.out$fitted-p$se),color="[your color]",linetype="dashed")
+```
+What does the band actually mean? Because it's a one-standard-error band, it means that for any given $x$, there is an approximately 68% chance that the band overlaps the true underlying function value. This is a rough statement, though, given the correlation between neighboring data points (i.e., the lack of independence between $y_{i-1}$, $y_i$, and $y_{i+1}$, etc.). Just think of the band as a notion of how uncertain your fitted curve is at each $x$: is the band thin, or wide? Note that the bands get wider as we get to either end of the data: this is an expected feature, not a bug. There's fewer data within the span at either end, so the fitted function is that much more uncertain.
+```{r}
+# REPLACE ME WITH CODE
+# Fit a local polynomial regression model with a span of 0.6
+local_poly_model <- loess(y ~ x, data = df, weights = 1 / e^2, span = 0.6)
+
+# Predict y values and standard errors
+p <- predict(local_poly_model, newdata = df, se = TRUE)
+
+# Store predictions and standard error bounds in the data frame
+df$y_pred_local <- p$fit
+df$y_upper <- p$fit + p$se.fit
+df$y_lower <- p$fit - p$se.fit
+
+# Plot with one-standard-error confidence band
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_errorbar(aes(ymin = y - e, ymax = y + e), width = 0.1, color = "blue") +
+  geom_point(color = "firebrick") +
+  geom_line(aes(y = y_pred_local), color = "darkgreen") +
+  geom_line(aes(y = y_upper), color = "darkgreen", linetype = "dashed") +
+  geom_line(aes(y = y_lower), color = "darkgreen", linetype = "dashed") +
+  labs(title = "Local Polynomial Regression with One-Standard-Error Band", x = "x", y = "y")
+
+
+```

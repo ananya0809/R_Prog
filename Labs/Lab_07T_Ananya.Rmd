@@ -1,0 +1,263 @@
+---
+title: "Lab_14T"
+author: "36-600"
+date: "Fall 2023"
+output:
+  html_document:
+    toc: no
+    toc_float: no
+    theme: spacelab
+  pdf_document:
+    toc: no
+---
+
+## Data: Part I
+
+We'll begin by importing the breast cancer dataset we've looked at previously:
+```{r}
+suppressMessages(library(tidyverse))
+df        <- read.csv("http://www.stat.cmu.edu/~pfreeman/breastcancer.csv",stringsAsFactors=TRUE)
+df        <- df[,c(1,16)]
+names(df) <- c("x","Y")
+```
+We retain `Diagnosis` as our categorical predictor variable (now dubbed `x`) and `Worst.Smoothness` as
+the response variable (now dubbed `Y`).
+
+## Question 1
+
+Create a grouped boxplot and make a mental note as to whether or not it appears that the true means for each group are different. 
+```{r fig.align='center',fig.height=4,fig.width=4}
+# FILL ME IN
+ggplot(df, aes(x = x, y = Y, fill = x)) +
+  geom_boxplot() +
+  labs(x = "Diagnosis", y = "Worst.Smoothness") +
+  theme_minimal() +
+  ggtitle("Boxplot of Worst.Smoothness by Diagnosis")
+```
+
+## Question 2
+
+Now let's determine if the assumptions underlying the use of the two-sample $t$ test hold...specifically,
+that the data within the individual groups are normally distributed with constant variance $\sigma^2$.
+
+First, run a `shapiro.test()` on the data of groups `B` and `M`. If the $p$-value is less than $\alpha = 0.05$,
+we reject the null hypothesis that the data are normally distributed. (However, even if we reject the null hypothesis, we will still use these data below for illustrative purposes!)
+
+Recall that in `dplyr` you can do the test as follows:
+```
+df %>% filter(.,x=="<INSERT CATEGORY NAME>") %>% select(.,Y) %>% pull(.) %>% shapiro.test(.)
+```
+The `pull()` function, which is new, coerces a column of numbers in a data frame to being "just" a 
+vector...which we need to do because the Shapiro-Wilk test function doesn't like data frames as inputs.
+
+Go ahead and perform the test here, then state a conclusion.
+```{r}
+# FILL ME IN
+# Perform Shapiro-Wilk test for group "B" (Benign)
+shapiro_b <- df %>% filter(x == "B") %>% select(Y) %>% pull() %>% shapiro.test()
+
+# Perform Shapiro-Wilk test for group "M" (Malignant)
+shapiro_m <- df %>% filter(x == "M") %>% select(Y) %>% pull() %>% shapiro.test()
+
+shapiro_b
+shapiro_m
+```
+```
+FILL ME IN
+Since the p-value for both category B and M is less than 0.05, we reject the null hypothesis that the data are normally distributed.
+```
+
+Second, run the `leveneTest()` (from the `car` package). Here, you need not separate the data...you can
+simply input a model formula (`Y~x`) and specify `data=df`. If the $p$-value is less than $\alpha = 0.05$,
+we reject the null hypothesis that the variances are the same across groups. What do you conclude?
+(We should note a rule of thumb that you might see: two-sample $t$ tests and ANOVA are robust to
+heterogeneity of variance so long as the largest variance is no more than four times the smallest variance.
+So even if we reject the null here, we might very well still be able to pursue ANOVA.)
+```{r}
+# FILL ME IN
+library(car)
+levene_test <- leveneTest(Y ~ x, data = df)
+levene_test
+
+```
+```
+FILL ME IN
+Here, since the p value is greater than 0.05, we do not reject the null hypothesis, thus the variances are not the same across groups.
+```
+
+## Question 3
+
+Now, run a two-sample $t$ test and make a conclusion about whether the response values for each group
+(`B` and `M`) have the same mean. Note that like for Levene's test, the `t.test()` will allow you to
+input a model formula, so you don't need to split up the data yourself. The null hypothesis, by the way,
+is that the difference in means is equal to zero.
+```{r}
+# FILL ME IN
+t_test_result <- t.test(Y ~ x, data = df)
+t_test_result
+```
+```
+FILL ME IN
+Since the p value is much smaller than 0.05, we reject the null hypothesis that the difference in means is equal to zero.
+```
+
+## Data: Part II
+
+We'll continue by importing the hospital cost dataset we've looked at previously:
+```{r}
+df        <- read.csv("http://www.stat.cmu.edu/~pfreeman/hospital_cost.csv",stringsAsFactors=TRUE)
+df        <- df[,c(5,1)]
+names(df) <- c("x","Y")
+df$x      <- factor(df$x)
+w         <- which(df$Y==0)
+df        <- df[-w,]
+df$Y      <- log10(df$Y)
+```
+We retain `Drugs` as our categorical predictor variable (now dubbed `x`) and `Cost` as
+the response variable (now dubbed `Y`). The groups for `x` are "0", "1", and "2". Note
+that we logarithmically transform `Y` after removing values of zero.
+
+## Question 4
+
+Repeat Q1 here: create a grouped boxplot and make a mental note as to whether or not it appears 
+that the true means for each group are different. 
+```{r fig.align='center',fig.height=4,fig.width=4}
+# FILL ME IN
+ggplot(df, aes(x = x, y = Y)) +
+  geom_boxplot() +
+  labs(title = "Grouped Boxplot of Log10 Transformed Costs (Y) by Drug Groups (x)",
+       x = "Drug Group (x)",
+       y = "Log10(Cost) (Y)") +
+  theme_minimal()
+```
+
+## Question 5
+
+Repeat Q2 here: run three Shapiro-Wilk tests and one Levene's test, and state which underlying assumptions
+of the ANOVA model hold here, and which do not. If Levene's test indicates that the variances are truly unequal, compute the variances for each sample and see whether or not the rule-of-thumb given in Q2 can
+be applied here. (To compute variances, just use the same "codeflow" as you
+used for the Shapiro-Wilk test but put the `var()` function at the end.)
+```{r}
+# FILL ME IN
+
+# Perform Shapiro-Wilk test for group "0"
+shapiro_0 <- df %>% filter(x == "0") %>% select(Y) %>% pull() %>% shapiro.test()
+# Perform Shapiro-Wilk test for group "1"
+shapiro_1 <- df %>% filter(x == "1") %>% select(Y) %>% pull() %>% shapiro.test()
+# Perform Shapiro-Wilk test for group "2"
+shapiro_2 <- df %>% filter(x == "2") %>% select(Y) %>% pull() %>% shapiro.test()
+
+# Display the results
+shapiro_0
+shapiro_1
+shapiro_2
+
+# Perform Levene's test for equality of variances
+levene_test_hospital <- leveneTest(Y ~ x, data = df)
+
+# Display the result
+levene_test_hospital
+
+# Compute variance for group "0"
+var_0 <- df %>% filter(x == "0") %>% select(Y) %>% pull() %>% var()
+
+# Compute variance for group "1"
+var_1 <- df %>% filter(x == "1") %>% select(Y) %>% pull() %>% var()
+
+# Compute variance for group "2"
+var_2 <- df %>% filter(x == "2") %>% select(Y) %>% pull() %>% var()
+
+# Display the variances
+var_0
+var_1
+var_2
+```
+```
+FILL ME IN
+Since all p values in shapiro tests are greater than 0.05, we fail to reject the null hypothesis, which means the assumption holds for each group.
+
+The p value for levene's test is smaller than 0.05, which indicates that the variances across the three groups are not equal.
+
+Thus we calculate the variances. Here the smallest variance is Group 0 = 0.6009, and largest variance is Group 1 = 0.7997.
+
+The ratio between the two is = 0.7997/0.6009 =~ 1.330
+
+Since this ratio is much less than 4, we can conclude that while Levene's test indicated unequal variances, the condition for the robustness of ANOVA holds.
+```
+
+## Question 6
+
+Show the summary output from regressing the variable `Y` upon `x`. What is the estimated mean response
+for each group?
+```{r}
+# FILL ME IN
+model <- lm(Y ~ x, data = df)
+
+summary_output <- summary(model)
+
+# Show the summary output
+summary_output
+```
+```
+FILL ME IN
+For Group 0, the mean response is equal to the intercept.
+Thus Group 0 Mean = 2.66656
+
+For Group 1: The mean response is the intercept plus the coefficient for 1.
+Thus Group 1 Mean = 2.66656 + 0.30586 = 2.97242
+
+For Group 2, the mean response is the intercept plus the coefficient for 2.
+Thus Group 2 Mean = 2.66656 + 0.36439 = 3.03095
+```
+
+## Question 7
+
+Now pass the output from your call to linear regression into the `anova()` function. What is the hypothesis
+test statistic value and the $p$-value, and what conclusion do you draw?
+```{r}
+# FILL ME IN
+anova_output <- anova(model)
+anova_output
+```
+```
+FILL ME IN
+Hypothesis Test Statistic Value (F Value) = 12.136
+P Value = 6.45e-06
+
+The p-value is much less than 0.05, leading us to reject the null hypothesis.
+```
+
+## Question 8
+
+Here, pass the output from `aov(Y~x,data=df)` to the `TukeyHSD()` function and state a conclusion:
+which group or groups differ from the others? Which do we conclude have the same means?
+```{r}
+# FILL ME IN
+
+# Perform ANOVA using aov
+anova_model <- aov(Y ~ x, data = df)
+
+# Perform Tukey's Honest Significant Difference test
+tukey_results <- TukeyHSD(anova_model)
+
+# Display the Tukey test results
+tukey_results
+```
+```
+FILL ME IN
+
+- Comparison 1 - 0 (Group "1" vs. Group "0"):
+Difference: 0.3059
+p adj: 0.00245 (less than 0.05)
+Conclusion: There is a statistically significant difference between Group "1" and Group "0".
+
+- Comparison 2 - 0 (Group "2" vs. Group "0"):
+Difference: 0.3644
+p adj: 0.00020 (less than 0.05)
+Conclusion: There is a statistically significant difference between Group "2" and Group "0".
+
+- Comparison 2 - 1 (Group "2" vs. Group "1"):
+Difference: 0.0585
+p adj: 0.87786 (greater than 0.05)
+Conclusion: There is no statistically significant difference between Group "2" and Group "1".
+```

@@ -1,0 +1,163 @@
+---
+title: "Lab: Basic String Manipulation"
+author: "36-600"
+output:
+  html_document:
+    toc: no
+    toc_float: no
+    theme: spacelab
+  pdf_document:
+    toc: no
+---
+
+## Data
+
+Below we read in Joe Biden's 2021 inauguration speech as formatted by the White House on its website (with one exception: I concatenated the lines containing a poem together into one line).
+```{r}
+lines = readLines("http://www.stat.cmu.edu/~pfreeman/biden_2021.txt")
+```
+
+## Question 1
+
+How many lines are there? How many characters are there, overall? (This includes spaces and punctuation, for now.)
+```{r}
+# FILL ME IN
+# Calculating the number of lines
+num_lines <- length(lines)
+
+# Calculating the total number of characters (including spaces and punctuation)
+num_chars <- sum(nchar(lines))
+
+# Output the results
+num_lines
+num_chars
+
+```
+
+## Question 2
+
+How many spaces are there in the speech, as formatted? (Don't worry about the fact that there would be spaces between the lines if they were all concatenated together.) One way to do this is to use `gregexpr()` to identify every place where there are spaces, then use a for-loop to loop over the output from that function and count the number of spaces. For instance:
+```
+out = [output from some function call]
+total = 0
+for ( ii in 1:length(lines) ) {
+  total = total+length(out[[ii]])
+}
+```
+
+```{r}
+# FILL ME IN
+# Using gregexpr() to find spaces in each line
+spaces <- gregexpr(" ", lines)
+
+# Initializing the total count of spaces
+total_spaces <- 0
+
+# Looping through each line and summing the spaces
+for (ii in 1:length(spaces)) {
+  total_spaces <- total_spaces + length(spaces[[ii]][spaces[[ii]] != -1])
+}
+
+# Output the total number of spaces
+total_spaces
+
+```
+
+## Question 3
+
+Create a table showing how many words are on each line of the speech. For our purposes, words are separated by spaces. Utilize `strsplit()`. The output will be a list, where each element shows the individual words from a speech line. Determine the total number of words for each line, put the results in a vector, and run `table()` with that vector as input. You should find that nine of the lines have one word, etc. (Note that you'll utilize a for-loop again, in a manner similar to the last question.)
+```{r}
+# FILL ME IN
+# Splitting each line into words using strsplit
+words_list <- strsplit(lines, " ")
+
+# Initializing a vector to store the word count for each line
+word_counts <- numeric(length(lines))
+
+# Looping through each line to calculate the number of words
+for (ii in 1:length(words_list)) {
+  word_counts[ii] <- length(words_list[[ii]][words_list[[ii]] != ""])
+}
+
+# Creating a table of word counts
+word_count_table <- table(word_counts)
+
+# Output the table
+word_count_table
+
+```
+
+## Question 4
+
+Define a variable called `america` which is true if the word "America" is observed in a speech line, and false otherwise. Run `sum()` on that variable to see how many lines have "America" in it. Don't overthink this: you can do this in one line utilizing `grepl()`.
+```{r}
+# FILL ME IN
+# Define the variable 'america' using grepl to check for the word "America"
+sum_america <- sum(grepl("America", lines))
+
+# Output the result
+sum_america
+```
+
+## Question 5
+
+Concatenate Biden's inaugural speech into a single line. Call the output `speech`. Make sure that you insert a space between the end of each of the old lines and the beginning of the next lines. (See our use of the `collapse` argument in `paste()`.)
+```{r}
+# FILL ME IN
+# Concatenate all lines into a single line with spaces between them
+speech <- paste(lines, collapse = " ")
+speech
+```
+
+## Question 6
+
+Working either with `lines` or with `speech`, utilize the framework on the last slide of the notes to remove punctuation and stopwords, leaving a single line speech in the end.
+```{r}
+# FILL ME IN
+library(stopwords)
+
+# Remove punctuation
+speech_clean <- gsub("[[:punct:]]", "", speech)
+
+# Convert to lowercase
+speech_clean <- tolower(speech_clean)
+
+# Split into words
+speech_words <- unlist(strsplit(speech_clean, " "))
+
+# Remove stopwords and empty strings
+speech_clean <- paste(speech_words[!(speech_words %in% stopwords("en")) & speech_words != ""], collapse = " ")
+
+# Output the cleaned speech
+speech_clean
+
+```
+
+## Question 7
+
+What are the top 20 words (meaning, non-stopwords) in Biden's speech? You might notice that "America" appears less than you'd expect, given your result above...but when you searched on "America" above, you probably also found "American" and "Americans," etc. (Unless you crafted a really exact regex!)
+```{r}
+# FILL ME IN
+# Remove punctuation
+speech_clean <- gsub("[[:punct:]]", "", speech)
+
+# Convert to lowercase
+speech_clean <- tolower(speech_clean)
+
+# Split into words
+speech_words <- unlist(strsplit(speech_clean, " "))
+
+# Remove stopwords and empty strings
+speech_words <- speech_words[!(speech_words %in% stopwords("en"))]
+speech_words <- speech_words[speech_words != ""]
+
+# Calculate word frequencies
+word_freq <- table(speech_words)
+
+# Sort frequencies in descending order and get the top 20
+top_20_words <- sort(word_freq, decreasing = TRUE)[1:20]
+
+# Output the result
+top_20_words
+```
+

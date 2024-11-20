@@ -1,0 +1,65 @@
+---
+title: "Lab: Numerical Optimization"
+author: "36-600"
+output: 
+  html_document:
+    toc: no
+    toc_float: no
+    theme: spacelab
+---
+
+## Data
+
+Let's generate the same data that we used to illustrate nonlinear regression:
+```{r}
+set.seed(555)
+x <- -5:5
+y <- 0.1*x^3 - 0.5*x + 2.1 + rnorm(length(x),mean=0,sd=0.5*(1+abs(x)))
+e <- 0.5*(1+abs(x))
+
+df <- data.frame("x"=x,"y"=y,"e"=e)
+
+suppressMessages(library(tidyverse))
+ggplot(data=df,mapping=aes(x=x,y=y)) +
+  geom_errorbar(aes(ymin=y-e, ymax=y+e), width=.1,color="blue") +
+  geom_point(color="firebrick")
+```
+
+# Questions
+
+## Question 1
+
+Assume that you know that a cubic polynomial is the correct function to use here, but you do not know what the true parameters are. (That means you should include the $x^2$ term in your curve-fitting analysis! Yes...you could just do polynomial regression here, like you did in the last lab, but we'll go ahead and try out numerical optimization.) Code an optimizer that will allow you to estimate the four coefficient terms of a cubic polynomial. Try not to let the true cubic polynomial coefficients above influence your initial guesses. Show the coefficients and plot your result. Make sure your plot looks good before you move on to Question 2: with four terms, it can be relatively easy to find a locally optimal result that is not the globally optimal result, i.e., it can be relatively easy to find a local minimum in $\chi^2$ that is not the global minimum. It's pretty easy to identify when this is the case when you plot functions...so always plot them! 
+```{r}
+# REPLACE ME WITH CODE
+```
+
+## Question 2
+
+Take the minimum $\chi^2$ value that you found in Question 1 (it's in the output from `optim()`, even if you didn't explicitly display it) and perform a $\chi^2$ goodness of fit test. Recall that the null hypothesis is that the model is an acceptable one, i.e., that it plausibly replicates the data-generating process. Do you reject the null, or fail to reject the null? (Also recall that the number of degrees of freedom is $n-p$, where $n$ is the length of $x$ and $p$ is the number of coefficients in the cubic polynomial.)
+```{r}
+# REPLACE ME WITH CODE
+```
+```
+Replace me with text
+```
+
+## Data Part II
+
+Now let's say we have a dataset that looks like this:
+```{r}
+df <- read.csv("https://www.stat.cmu.edu/~pfreeman/optim_data.csv")
+
+suppressMessages(library(tidyverse))
+ggplot(data=df,mapping=aes(x=x,y=y)) +
+  geom_errorbar(aes(ymin=y-e, ymax=y+e), width=.1,color="blue") +
+  geom_point(color="firebrick")
+```
+
+## Question 3
+
+This will be a bit more free-form. Determine a model that might generate the observed data, optimize its parameters, and plot the result. Not sure where to start? Well, that's a common feeling in real-life analyses situations...
+```{r}
+# REPLACE ME WITH CODE
+```
+
