@@ -1,0 +1,273 @@
+---
+title: "Lab: Data Analysis Workflow Review"
+author: "36-600"
+output:
+  html_document:
+    toc: no
+    toc_float: no
+    theme: spacelab
+  pdf_document:
+    toc: no
+---
+
+This week's lab is very much do-it-yourself. On `Canvas`, under `Files > DATA`, there is a file called `creditDefault.csv`. Your boss wants to know if any of the variables included in this file, apart from `Default` itself, are important for predicting whether a person will default rather than paying back their credit-card balance.
+
+From the information above, you should construct an appropriate answer. Note that regardless of whether you think a non-ML model is sufficient, you should always check to see if an ML model gives much better predictive results. Also note that your boss is not necessarily looking for plots here...but you'd always want to do *some* EDA, if for no other reason than to ensure you don't have missing data or outliers!
+
+```{r}
+# Load necessary libraries
+suppressMessages(library(ggplot2))
+suppressMessages(library(caret))
+suppressMessages(library(randomForest))
+suppressMessages(library(dplyr))
+suppressMessages(library(pROC))
+
+# Load the dataset
+file_path <- "creditDefault.csv"
+credit_data <- read.csv(file_path)
+
+# Check for missing values
+cat("Missing values in each column:\n")
+print(colSums(is.na(credit_data)))
+
+# Summary statistics of numerical columns
+cat("\nSummary statistics of numerical features:\n")
+print(summary(select(credit_data, Balance, Income)))
+```
+```
+Findings:
+- No missing values were found in the dataset.
+Balance ranges from 0 to approximately 2654, with a mean of 1067.
+- Income ranges from 4985 to approximately 70700, with a mean of 33253.
+```
+
+```{r}
+# Encode categorical variables
+credit_data$Student <- as.factor(ifelse(credit_data$Student == "Yes", 1, 0))
+credit_data$Default <- as.factor(ifelse(credit_data$Default == "Yes", 1, 0))
+
+# Split data into training and testing sets
+set.seed(101)
+train_index <- createDataPartition(credit_data$Default, p = 0.7, list = FALSE)
+train_data <- credit_data[train_index, ]
+test_data <- credit_data[-train_index, ]
+```
+
+```
+Student and Default were encoded as binary factors (1 for "Yes" and 0 for "No").
+The dataset was split into 70% training and 30% testing data.
+```
+
+```{r}
+# R Code for a Non-ML Approach
+
+# 1. Chi-Square Test: Student vs. Default
+student_table <- table(credit_data$Student, credit_data$Default)
+cat("\nChi-Square Test for Student and Default:\n")
+chisq_test <- chisq.test(student_table)
+print(chisq_test)
+
+# 2. T-Test: Balance vs. Default
+cat("\nT-Test for Balance and Default:\n")
+t_test_balance <- t.test(Balance ~ Default, data = credit_data)
+print(t_test_balance)
+
+# 3. T-Test: Income vs. Default
+cat("\nT-Test for Income and Default:\n")
+t_test_income <- t.test(Income ~ Default, data = credit_data)
+print(t_test_income)
+
+# Visualize distributions for Balance and Income by Default
+ggplot(credit_data, aes(x = factor(Default), y = Balance)) +
+  geom_boxplot(aes(fill = factor(Default))) +
+  labs(title = "Boxplot of Balance by Default", x = "Default (0 = No, 1 = Yes)", y = "Balance") +
+  theme_minimal()
+
+ggplot(credit_data, aes(x = factor(Default), y = Income)) +
+  geom_boxplot(aes(fill = factor(Default))) +
+  labs(title = "Boxplot of Income by Default", x = "Default (0 = No, 1 = Yes)", y = "Income") +
+  theme_minimal()
+```
+
+```
+Chi-Square Test:
+Testing the association between two categorical variables (Student and Default).
+The null hypothesis assumes no 
+
+T-Test:
+Comparing the means of Balance and Income for the two groups (Default = 0 vs. Default = 1).
+The null hypothesis assumes no difference in means between groups.
+
+
+Chi-Square Test: As the p-value is very small (p-value < 2.2e-16), there is a significant association between Student status and defaulting.
+T-Tests: The small p-values (p-value = 0.07514) indicate significant differences in the means of Balance or Income for individuals who default versus those who don’t.
+```
+
+```{r}
+# Logistic Regression Model
+log_reg <- glm(Default ~ ., data = train_data, family = binomial)
+cat("\nLogistic Regression Coefficients:\n")
+print(summary(log_reg)$coefficients)
+log_reg_pred <- predict(log_reg, test_data, type = "response")
+log_reg_pred_class <- as.factor(ifelse(log_reg_pred > 0.5, 1, 0))
+
+# Confusion Matrix for Logistic Regression
+log_reg_conf_mat <- confusionMatrix(log_reg_pred_class, test_data$Default)
+cat("\nLogistic Regression Metrics:\n")
+print(log_reg_conf_mat)
+```
+
+```{r}
+# Random Forest Classifier
+rf_clf <- randomForest(Default ~ ., data = train_data, importance = TRUE, ntree = 100)
+cat("\nRandom Forest Feature Importance:\n")
+print(importance(rf_clf))
+varImpPlot(rf_clf)
+rf_pred_class <- predict(rf_clf, test_data)
+
+# Confusion Matrix for Random Forest
+rf_conf_mat <- confusionMatrix(rf_pred_class, test_data$Default)
+cat("\nRandom Forest Metrics:\n")
+print(rf_conf_mat)
+```
+
+```
+Logistic Regression:
+Accuracy: ~87%
+
+Random Forest Classifier:
+Accuracy: ~87%
+```
+
+```{r}
+# Visualize Outliers and Distributions
+ggplot(credit_data, aes(x = Balance)) + 
+  geom_histogram(bins = 30, fill = "blue", alpha = 0.7) +
+  labs(title = "Distribution of Balance")
+
+ggplot(credit_data, aes(x = Income)) + 
+  geom_histogram(bins = 30, fill = "green", alpha = 0.7) +
+  labs(title = "Distribution of Income")
+
+```
+
+
+```{r}
+# Feature Importance from Random Forest
+feature_importance <- as.data.frame(importance(rf_clf))
+feature_importance$Feature <- rownames(feature_importance)
+feature_importance <- feature_importance %>% arrange(desc(MeanDecreaseGini))
+
+# Plot Feature Importance
+ggplot(feature_importance, aes(x = reorder(Feature, MeanDecreaseGini), y = MeanDecreaseGini)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Feature Importance (Random Forest)", x = "Features", y = "Importance") +
+  theme_minimal()
+```
+
+```
+Balance is the most important feature for predicting default.
+Income has moderate importance, while Student is the least important.
+```
+
+```{r}
+# Scatterplot of Balance vs Income
+ggplot(credit_data, aes(x = Balance, y = Income, color = Default)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Balance vs. Income Colored by Default", x = "Balance", y = "Income") +
+  scale_color_manual(values = c("red", "blue")) +
+  theme_minimal()
+
+# Boxplot of Balance by Default
+ggplot(credit_data, aes(x = Default, y = Balance, fill = Default)) +
+  geom_boxplot() +
+  labs(title = "Balance Distribution by Default", x = "Default", y = "Balance") +
+  scale_fill_manual(values = c("red", "blue")) +
+  theme_minimal()
+
+# Boxplot of Income by Default
+ggplot(credit_data, aes(x = Default, y = Income, fill = Default)) +
+  geom_boxplot() +
+  labs(title = "Income Distribution by Default", x = "Default", y = "Income") +
+  scale_fill_manual(values = c("red", "blue")) +
+  theme_minimal()
+```
+
+```
+Scatterplot:
+- Individuals with higher balances are more likely to default.
+- Income does not show a strong separation between defaulters and non-defaulters.
+
+Boxplots:
+- Defaulters generally have higher balances compared to non-defaulters.
+- Income distributions are similar for both groups, showing less predictive power.
+
+
+Conclusion :
+Balance, Income and Student are all important for the final result. All have differing importance.
+```
+
+```{r}
+# Model Comparison Using AUC-ROC
+# Logistic Regression
+log_reg_pred <- predict(log_reg, test_data, type = "response")
+roc_log_reg <- roc(test_data$Default, as.numeric(log_reg_pred))
+cat("\nLogistic Regression AUC:\n")
+print(auc(roc_log_reg))
+
+# Random Forest
+rf_pred <- predict(rf_clf, test_data, type = "prob")[, 2]
+roc_rf <- roc(test_data$Default, rf_pred)
+cat("\nRandom Forest AUC:\n")
+print(auc(roc_rf))
+
+# Plot ROC curves
+plot(roc_log_reg, col = "blue", main = "ROC Curves")
+lines(roc_rf, col = "red")
+legend("bottomright", legend = c("Logistic Regression", "Random Forest"),
+       col = c("blue", "red"), lwd = 2)
+
+# Hyperparameter Tuning for Random Forest
+rf_tuned <- train(
+  Default ~ ., data = train_data, method = "rf",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = expand.grid(.mtry = 2:4)
+)
+cat("\nTuned Random Forest Model:\n")
+print(rf_tuned)
+```
+
+```
+Comparison of Non-ML vs. ML Models
+
+Non-ML Approach:
+
+1. Chi-Square Test:
+Evaluates if Student status is associated with Default.
+
+2. T-Tests:
+Tests whether Balance and Income differ significantly for individuals who defaulted versus those who didn’t.
+
+The Non-ML techniques are simple and interpretable, highlights statistical relationships and significance directly, and are quick to implement without complex tuning.
+
+However, these techniques cannot model complex relationships or interactions between variables. P-value does not provide predictive power.
+They Assume linearity and homogeneity of variance, which may not hold.
+
+ML Approach:
+
+1. Logistic Regression:
+Predicts Default based on linear relationships between variables.
+Provides interpretable coefficients indicating the direction and magnitude of effects.
+
+2. Random Forest:
+Captures non-linear relationships and interactions between features.
+Provides feature importance rankings.
+
+The ML techniques have predictive power: ML models can achieve higher accuracy than statistical tests,
+Flexibility: Handles non-linear relationships, feature interactions, and missing data,
+Model evaluation: Metrics like AUC-ROC, sensitivity, and specificity provide nuanced performance measures.
+
+However, they are less interpretable compared to statistical tests, require hyperparameter tuning on Random Forest, and are generally computationally expensive for large datasets.
+
+```
